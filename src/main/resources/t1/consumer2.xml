@@ -6,18 +6,32 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
 		http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core-5.5.0.xsd">
-	<amq:connectionFactory id="jmsConnectionFactory"
-		brokerURL="failover:(tcp://secooActivemq01.secoolocal.com:61616,tcp://secooActivemq02.secoolocal.com:61616)?randomize=false">
-		<amq:prefetchPolicy>
-			<amq:prefetchPolicy queuePrefetch="5" />
-		</amq:prefetchPolicy>
-		<amq:redeliveryPolicy>
-			<amq:redeliveryPolicy redeliveryDelay="3000"
-				maximumRedeliveries="2" />
-		</amq:redeliveryPolicy>
-	</amq:connectionFactory>
+    <bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="failover:(tcp://test1.com:61616,tcp://test2.com:61616)?randomize=false" />
+        <property name="copyMessageOnSend" value="false"></property>
+        <property name="useAsyncSend" value="true"></property>
+        <property name="prefetchPolicy" ref="prefetchPolicy"></property>
+        <property name="redeliveryPolicy" ref="redeliveryPolicy"></property>
+    </bean>
 
-	<amq:queue id="q1" physicalName="q1" />
+    <bean id="jmsConnectionFactory"
+        class="org.springframework.jms.connection.CachingConnectionFactory">
+        <!-- 目标ConnectionFactory对应真实的可以产生JMS Connection的ConnectionFactory -->
+        <property name="targetConnectionFactory" ref="targetConnectionFactory" />
+        <!-- Session缓存数量,这里属性也可以直接在这里配置 -->
+        <property name="sessionCacheSize" value="100" />
+    </bean>
+
+    <bean id="prefetchPolicy" class="org.apache.activemq.ActiveMQPrefetchPolicy">
+        <property name="queuePrefetch" value="1"></property>
+    </bean>
+    <bean id="redeliveryPolicy" class="org.apache.activemq.RedeliveryPolicy">
+        <property name="redeliveryDelay" value="2000"></property>
+        <property name="initialRedeliveryDelay" value="2000"></property>
+        <property name="maximumRedeliveries" value="1"></property>
+    </bean>
+
+	<amq:queue id="q1" physicalName="testQueue229" />
 	<bean id="jmsConverter" class="com.secoo.jms.utility.JMSMessageConverter" />
 	<bean id="q1Consumer" class="com.hzz.activemq.t1.Q1Consumer2" />
     <bean id="q1ConsumerListener" class="com.secoo.jms.utility.JMSMessageListener">
@@ -29,5 +43,6 @@
         <property name="destination" ref="q1"/>
         <property name="messageListener" ref="q1ConsumerListener"/>
 <!--         <property name="sessionTransacted" value="true"/>   -->
+<!--  <property name="maxConcurrentConsumers" value="5"/> -->
     </bean>
 </beans>

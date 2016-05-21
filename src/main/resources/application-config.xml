@@ -5,16 +5,20 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
 		http://activemq.apache.org/schema/core http://activemq.apache.org/schema/core/activemq-core-5.5.0.xsd">
-	<amq:connectionFactory id="jmsConnectionFactory"
-		brokerURL="failover:(tcp://secooActivemq01.secoolocal.com:61616,tcp://secooActivemq02.secoolocal.com:61616)?randomize=false">
-		<amq:prefetchPolicy>
-			<amq:prefetchPolicy queuePrefetch="5" />
-		</amq:prefetchPolicy>
-		<amq:redeliveryPolicy>
-			<amq:redeliveryPolicy redeliveryDelay="100"
-				maximumRedeliveries="2" />
-		</amq:redeliveryPolicy>
-	</amq:connectionFactory>
+	<bean id="targetConnectionFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
+		<property name="brokerURL" value="failover:(tcp://test1.com:61616,tcp://test2.com:61616)?randomize=false" />
+		<property name="prefetchPolicy" ref="prefetchPolicy"></property>
+<!-- 		<property name="useAsyncSend" value="true"></property> -->
+		<property name="copyMessageOnSend" value="false"></property>
+	</bean>
+	<bean id="prefetchPolicy" class="org.apache.activemq.ActiveMQPrefetchPolicy">
+		<property name="queuePrefetch" value="1"></property>
+	</bean>
+	
+	<bean id="jmsConnectionFactory"
+		class="org.springframework.jms.connection.SingleConnectionFactory">
+		<property name="targetConnectionFactory" ref="targetConnectionFactory" />
+	</bean>
 
 	<amq:queue id="helloTestQueue5" physicalName="helloTestQueue5" />
 	<bean id="jmsConverter" class="com.secoo.jms.utility.JMSMessageConverter" />
